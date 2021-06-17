@@ -1,3 +1,4 @@
+using Lucene.Net.Support;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -16,9 +17,15 @@ namespace Merge
 {
     public class Startup
     {
-        public Startup(IConfiguration configuration)
+        public Startup(IWebHostEnvironment env)
         {
-            Configuration = configuration;
+
+            var builder = new ConfigurationBuilder()
+                 .SetBasePath(env.ContentRootPath)
+                 .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+                 .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true);
+            builder.AddEnvironmentVariables();
+            Configuration = builder.Build();
         }
 
         public IConfiguration Configuration { get; }
@@ -28,9 +35,10 @@ namespace Merge
         {
             services.AddRouting(r => r.LowercaseUrls = true);
             services.AddControllers();
+            services.Configure<AppSettings>(options => Configuration.GetSection("AppSettings").Bind(options));
             services.AddSwaggerGen(c =>
             {
-                c.SwaggerDoc("v1", new OpenApiInfo { Title = "Merge", Version = "v1" });
+                c.SwaggerDoc("v1", new OpenApiInfo { Title = "servicethree", Version = "v1" });
             });
         }
 
@@ -40,10 +48,15 @@ namespace Merge
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
-                app.UseSwagger();
-                app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Merge v1"));
+                //app.UseSwagger();
+                //app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "servicethree v1"));
             }
-
+            app.UseSwagger();
+            app.UseSwaggerUI(c =>
+            {
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "servicethree v1");
+                c.RoutePrefix = string.Empty;
+            });
             app.UseHttpsRedirection();
 
             app.UseRouting();
